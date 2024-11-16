@@ -60,6 +60,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     """
     insert_test_table_with_defaults = 'INSERT INTO {} ("null") VALUES (1)'
     supports_default_keyword_in_insert = False
+    supports_unlimited_charfield = True
 
     @cached_property
     def django_test_skips(self):
@@ -100,7 +101,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
                         "servers.tests.LiveServerTestCloseConnectionTest."
                         "test_closes_connections",
                     },
-                    "For SQLite in-memory tests, closing the connection destroys"
+                    "For SQLite in-memory tests, closing the connection destroys "
                     "the database.": {
                         "test_utils.tests.AssertNumQueriesUponConnectionTests."
                         "test_ignores_connection_configuration_queries",

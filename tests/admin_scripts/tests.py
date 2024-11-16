@@ -25,6 +25,7 @@ from django.core.management import (
     color,
     execute_from_command_line,
 )
+from django.core.management.base import LabelCommand
 from django.core.management.commands.loaddata import Command as LoaddataCommand
 from django.core.management.commands.runserver import Command as RunserverCommand
 from django.core.management.commands.testserver import Command as TestserverCommand
@@ -2280,6 +2281,20 @@ class CommandTypes(AdminScriptTestCase):
             "('settings', None), ('traceback', False), ('verbosity', 1)]",
         )
 
+    def test_custom_label_command_custom_missing_args_message(self):
+        class Command(LabelCommand):
+            missing_args_message = "Missing argument."
+
+        with self.assertRaisesMessage(CommandError, "Error: Missing argument."):
+            call_command(Command())
+
+    def test_custom_label_command_none_missing_args_message(self):
+        class Command(LabelCommand):
+            missing_args_message = None
+
+        with self.assertRaisesMessage(CommandError, ""):
+            call_command(Command())
+
     def test_suppress_base_options_command_help(self):
         args = ["suppress_base_options_command", "--help"]
         out, err = self.run_manage(args)
@@ -2341,8 +2356,8 @@ class Discovery(SimpleTestCase):
 class CommandDBOptionChoiceTests(SimpleTestCase):
     def test_invalid_choice_db_option(self):
         expected_error = (
-            "Error: argument --database: invalid choice: "
-            "'deflaut' (choose from 'default', 'other')"
+            r"Error: argument --database: invalid choice: 'deflaut' "
+            r"\(choose from '?default'?, '?other'?\)"
         )
         args = [
             "changepassword",
@@ -2363,7 +2378,7 @@ class CommandDBOptionChoiceTests(SimpleTestCase):
         ]
 
         for arg in args:
-            with self.assertRaisesMessage(CommandError, expected_error):
+            with self.assertRaisesRegex(CommandError, expected_error):
                 call_command(arg, "--database", "deflaut", verbosity=0)
 
 

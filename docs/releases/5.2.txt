@@ -44,13 +44,52 @@ Minor features
 :mod:`django.contrib.admindocs`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* ...
+* Links to components in docstrings now supports custom link text, using the
+  format ``:role:`link text <link>```. See :ref:`documentation helpers
+  <admindocs-helpers>` for more details.
+
+* The :ref:`model pages <admindocs-model-reference>` are now restricted to
+  users with the corresponding view or change permissions.
 
 :mod:`django.contrib.auth`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * The default iteration count for the PBKDF2 password hasher is increased from
   870,000 to 1,000,000.
+
+* The following new asynchronous methods are now provided, using an ``a``
+  prefix:
+
+  * :meth:`.UserManager.acreate_user`
+  * :meth:`.UserManager.acreate_superuser`
+  * :meth:`.BaseUserManager.aget_by_natural_key`
+  * :meth:`.User.aget_user_permissions`
+  * :meth:`.User.aget_all_permissions`
+  * :meth:`.User.aget_group_permissions`
+  * :meth:`.User.ahas_perm`
+  * :meth:`.User.ahas_perms`
+  * :meth:`.User.ahas_module_perms`
+  * :meth:`.User.aget_user_permissions`
+  * :meth:`.User.aget_group_permissions`
+  * :meth:`.User.ahas_perm`
+  * :meth:`.ModelBackend.aauthenticate`
+  * :meth:`.ModelBackend.aget_user_permissions`
+  * :meth:`.ModelBackend.aget_group_permissions`
+  * :meth:`.ModelBackend.aget_all_permissions`
+  * :meth:`.ModelBackend.ahas_perm`
+  * :meth:`.ModelBackend.ahas_module_perms`
+  * :meth:`.RemoteUserBackend.aauthenticate`
+  * :meth:`.RemoteUserBackend.aconfigure_user`
+
+* Auth backends can now provide async implementations which are used when
+  calling async auth functions (e.g.
+  :func:`~.django.contrib.auth.aauthenticate`) to reduce context-switching
+  which improves performance. See :ref:`adding an async interface
+  <writing-authentication-backends-async-interface>` for more details.
+
+* The :ref:`password validator classes <included-password-validators>`
+  now have a new method ``get_error_message()``, which can be overridden in
+  subclasses to customize the error messages.
 
 :mod:`django.contrib.contenttypes`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -60,7 +99,19 @@ Minor features
 :mod:`django.contrib.gis`
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* ...
+* GDAL now supports curved geometries ``CurvePolygon``, ``CompoundCurve``,
+  ``CircularString``, ``MultiSurface``, and ``MultiCurve`` via the new
+  :attr:`.OGRGeometry.has_curve` property, and the
+  :meth:`.OGRGeometry.get_linear_geometry` and
+  :meth:`.OGRGeometry.get_curve_geometry` methods.
+
+* :lookup:`coveredby` and :lookup:`covers` lookup are now supported on MySQL.
+
+* :lookup:`coveredby` and :lookup:`isvalid` lookups,
+  :class:`~django.contrib.gis.db.models.Collect` aggregation, and
+  :class:`~django.contrib.gis.db.models.functions.GeoHash` and
+  :class:`~django.contrib.gis.db.models.functions.IsValid` database functions
+  are now supported on MariaDB 11.7+.
 
 :mod:`django.contrib.messages`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -128,7 +179,8 @@ Database backends
 Decorators
 ~~~~~~~~~~
 
-* ...
+* :func:`~django.utils.decorators.method_decorator` now supports wrapping
+  asynchronous view methods.
 
 Email
 ~~~~~
@@ -194,10 +246,13 @@ Logging
 Management Commands
 ~~~~~~~~~~~~~~~~~~~
 
-* A new warning is printed to the console when running :djadmin:`runserver` that
-  ``runserver`` is unsuitable for production. This warning can be hidden by
-  setting the :envvar:`HIDE_PRODUCTION_WARNING` environment variable to
-  ``"true"``.
+* A new warning is displayed when running :djadmin:`runserver`, indicating that
+  it is unsuitable for production. This warning can be suppressed by setting
+  the :envvar:`HIDE_PRODUCTION_WARNING` environment variable to ``"true"``.
+
+* The :djadmin:`makemigrations` and :djadmin:`migrate` commands  have a new
+  ``Command.autodetector`` attribute for subclasses to override in order to use
+  a custom autodetector class.
 
 Migrations
 ~~~~~~~~~~
@@ -207,13 +262,11 @@ Migrations
 Models
 ~~~~~~
 
-* The ``SELECT`` clause generated when using
-  :meth:`QuerySet.values()<django.db.models.query.QuerySet.values>` and
-  :meth:`~django.db.models.query.QuerySet.values_list` now matches the
-  specified order of the referenced expressions. Previously the order was based
-  of a set of counterintuitive rules which made query combination through
-  methods such as
-  :meth:`QuerySet.union()<django.db.models.query.QuerySet.union>` unpredictable.
+* The ``SELECT`` clause generated when using :meth:`.QuerySet.values` and
+  :meth:`.QuerySet.values_list` now matches the specified order of the
+  referenced expressions. Previously, the order was based of a set of
+  counterintuitive rules which made query combination through methods such as
+  :meth:`.QuerySet.union` unpredictable.
 
 * Added support for validation of model constraints which use a
   :class:`~django.db.models.GeneratedField`.
@@ -222,10 +275,31 @@ Models
   expression contains a set-returning function, enforcing subquery evaluation.
   This is necessary for many Postgres set-returning functions.
 
+* :attr:`CharField.max_length <django.db.models.CharField.max_length>` is no
+  longer required to be set on SQLite, which supports unlimited ``VARCHAR``
+  columns.
+
+* :meth:`.QuerySet.explain` now supports the ``memory`` and ``serialize``
+  options on PostgreSQL 17+.
+
 Requests and Responses
 ~~~~~~~~~~~~~~~~~~~~~~
 
-* ...
+* The new :attr:`.HttpResponse.text` property provides the string
+  representation of :attr:`.HttpResponse.content`.
+
+* The new :meth:`.HttpRequest.get_preferred_type` method can be used to query
+  the preferred media type the client accepts.
+
+* The new ``preserve_request`` argument for
+  :class:`~django.http.HttpResponseRedirect` and
+  :class:`~django.http.HttpResponsePermanentRedirect`
+  determines whether the HTTP status codes 302/307 or 301/308 are used,
+  respectively.
+
+* The new ``preserve_request`` argument for
+  :func:`~django.shortcuts.redirect` allows to instruct the user agent to reuse
+  the HTTP method and body during redirection using specific status codes.
 
 Security
 ~~~~~~~~
@@ -235,7 +309,9 @@ Security
 Serialization
 ~~~~~~~~~~~~~
 
-* ...
+* Each serialization format now defines a ``Deserializer`` class, rather than a
+  function, to improve extensibility when defining a
+  :ref:`custom serialization format <custom-serialization-formats>`.
 
 Signals
 ~~~~~~~
@@ -253,6 +329,11 @@ Tests
 * Stack frames from Django's custom assertions are now hidden. This makes test
   failures easier to read and enables :option:`test --pdb` to directly enter
   into the failing test method.
+
+* Data loaded from :attr:`~django.test.TransactionTestCase.fixtures` and from
+  migrations enabled with :ref:`serialized_rollback=True
+  <test-case-serialized-rollback>` are now available during
+  ``TransactionTestCase.setUpClass()``.
 
 URLs
 ~~~~
@@ -287,12 +368,16 @@ Database backend API
 This section describes changes that may be needed in third-party database
 backends.
 
-* ...
+* The new :meth:`Model._is_pk_set() <django.db.models.Model._is_pk_set>` method
+  allows checking if a Model instance's primary key is defined.
+
 
 :mod:`django.contrib.gis`
 -------------------------
 
 * Support for PostGIS 3.0 is removed.
+
+* Support for GDAL 3.0 is removed.
 
 Dropped support for PostgreSQL 13
 ---------------------------------
@@ -305,6 +390,35 @@ Miscellaneous
 
 * Adding :attr:`.EmailMultiAlternatives.alternatives` is now only supported via
   the :meth:`~.EmailMultiAlternatives.attach_alternative` method.
+
+* The minimum supported version of ``gettext`` is increased from 0.15 to 0.19.
+
+* ``HttpRequest.accepted_types`` is now sorted by the client's preference,
+  based on the request's ``Accept`` header.
+
+* The attributes :attr:`.UniqueConstraint.violation_error_code` and
+  :attr:`.UniqueConstraint.violation_error_message` are now always used when
+  provided. Previously, they were ignored if :attr:`.UniqueConstraint.fields`
+  was set without a :attr:`.UniqueConstraint.condition`.
+
+* The :func:`~django.template.context_processors.debug` context processor is no
+  longer included in the default project template.
+
+* The following methods now have ``alters_data=True`` set to prevent side
+  effects when :ref:`rendering a template context <alters-data-description>`:
+
+  * :meth:`.UserManager.create_user`
+  * :meth:`.UserManager.acreate_user`
+  * :meth:`.UserManager.create_superuser`
+  * :meth:`.UserManager.acreate_superuser`
+  * :meth:`.QuerySet.create`
+  * :meth:`.QuerySet.acreate`
+  * :meth:`.QuerySet.bulk_create`
+  * :meth:`.QuerySet.abulk_create`
+  * :meth:`.QuerySet.get_or_create`
+  * :meth:`.QuerySet.aget_or_create`
+  * :meth:`.QuerySet.update_or_create`
+  * :meth:`.QuerySet.aupdate_or_create`
 
 .. _deprecated-features-5.2:
 

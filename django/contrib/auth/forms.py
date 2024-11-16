@@ -1,3 +1,4 @@
+import logging
 import unicodedata
 
 from django import forms
@@ -14,8 +15,10 @@ from django.utils.http import urlsafe_base64_encode
 from django.utils.text import capfirst
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.debug import sensitive_variables
 
 UserModel = get_user_model()
+logger = logging.getLogger("django.contrib.auth")
 
 
 def _unicode_ci_compare(s1, s2):
@@ -120,6 +123,7 @@ class SetPasswordMixin:
         )
         return password1, password2
 
+    @sensitive_variables("password1", "password2")
     def validate_passwords(
         self,
         password1_field_name="password1",
@@ -149,6 +153,7 @@ class SetPasswordMixin:
             )
             self.add_error(password2_field_name, error)
 
+    @sensitive_variables("password")
     def validate_password_for_user(self, user, password_field_name="password2"):
         password = self.cleaned_data.get(password_field_name)
         if password:
@@ -346,6 +351,7 @@ class AuthenticationForm(forms.Form):
         if self.fields["username"].label is None:
             self.fields["username"].label = capfirst(self.username_field.verbose_name)
 
+    @sensitive_variables()
     def clean(self):
         username = self.cleaned_data.get("username")
         password = self.cleaned_data.get("password")
@@ -418,7 +424,12 @@ class PasswordResetForm(forms.Form):
             html_email = loader.render_to_string(html_email_template_name, context)
             email_message.attach_alternative(html_email, "text/html")
 
-        email_message.send()
+        try:
+            email_message.send()
+        except Exception:
+            logger.exception(
+                "Failed to send password reset email to %s", context["user"].pk
+            )
 
     def get_users(self, email):
         """Given an email, return matching user(s) who should receive a reset.
@@ -532,6 +543,7 @@ class PasswordChangeForm(SetPasswordForm):
 
     field_order = ["old_password", "new_password1", "new_password2"]
 
+    @sensitive_variables("old_password")
     def clean_old_password(self):
         """
         Validate that the old_password field is correct.
