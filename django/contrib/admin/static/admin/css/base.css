@@ -359,6 +359,11 @@ tr:nth-child(odd) + .row-form-errors .errorlist {
     background: var(--darkened-bg);
 }
 
+tr:nth-child(even):has(input:checked),
+tr:nth-child(odd):has(input:checked) {
+    background-color: var(--selected-row);
+}
+
 /* SORTABLE TABLES */
 
 thead th {
